@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import styles from "./SelectLevelPage.module.css";
-import { useState } from "react";
+import { useGameMode } from "../../contexts/GameModeContext";
 
 export function SelectLevelPage() {
-  const [mistakeMode, setMistakeMode] = useState(false);
+  const { mistakeMode, setMistakeMode } = useGameMode();
 
   return (
     <div className={styles.container}>
@@ -15,17 +15,17 @@ export function SelectLevelPage() {
         </label>
         <ul className={styles.levels}>
           <li className={styles.level}>
-            <Link className={styles.levelLink} to={`/game/3?mistakeMode=${mistakeMode}`}>
+            <Link className={styles.levelLink} to={`/game/3`}>
               1
             </Link>
           </li>
           <li className={styles.level}>
-            <Link className={styles.levelLink} to={`/game/6?mistakeMode=${mistakeMode}`}>
+            <Link className={styles.levelLink} to={`/game/6`}>
               2
             </Link>
           </li>
           <li className={styles.level}>
-            <Link className={styles.levelLink} to={`/game/9?mistakeMode=${mistakeMode}`}>
+            <Link className={styles.levelLink} to={`/game/9`}>
               3
             </Link>
           </li>

@@ -5,6 +5,7 @@ import styles from "./Cards.module.css";
 import { EndGameModal } from "../../components/EndGameModal/EndGameModal";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
+import { useGameMode } from "../../contexts/GameModeContext";
 
 // Игра закончилась
 const STATUS_LOST = "STATUS_LOST";
@@ -28,14 +29,15 @@ function getTimerValue(startDate, endDate) {
   return { minutes, seconds };
 }
 
-export function Cards({ pairsCount = 3, previewSeconds = 5, mistakeMode = false }) {
+export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
   const [cards, setCards] = useState([]);
   const [status, setStatus] = useState(STATUS_PREVIEW);
-  const [mistakes, setMistakes] = useState(0);
   const [previewCountdown, setPreviewCountdown] = useState(previewSeconds);
   const [gameStartDate, setGameStartDate] = useState(null);
   const [gameEndDate, setGameEndDate] = useState(null);
   const [timer, setTimer] = useState({ seconds: 0, minutes: 0 });
+  const [currentPair, setCurrentPair] = useState([]); // Хранит пару открытых карт
+  const { mistakeMode, mistakes, addMistake, resetMistakes } = useGameMode();
 
   function finishGame(status = STATUS_LOST) {
     setGameEndDate(new Date());
@@ -51,50 +53,57 @@ export function Cards({ pairsCount = 3, previewSeconds = 5, mistakeMode = false 
   function resetGame() {
     setCards([]);
     setStatus(STATUS_PREVIEW);
-    setMistakes(0);
     setPreviewCountdown(previewSeconds); // Сброс обратного отсчёта
     setGameStartDate(null);
     setGameEndDate(null);
     setTimer({ minutes: 0, seconds: 0 });
+    resetMistakes(); // Сброс ошибок через контекст
   }
 
   const openCard = clickedCard => {
-    // Если карта уже открыта, ничего не делаем
-    if (clickedCard.open) return;
+    // Если карта уже открыта или уже выбрана для проверки, ничего не делаем
+    if (clickedCard.open || currentPair.some(card => card.id === clickedCard.id)) return;
 
-    // Обновляем состояние карт: открываем кликнутую карту
+    // Открываем кликнутую карту
     const nextCards = cards.map(card => (card.id === clickedCard.id ? { ...card, open: true } : card));
     setCards(nextCards);
 
-    // Открытые карты на игровом поле
-    const openCards = nextCards.filter(card => card.open);
+    const updatedPair = [...currentPair, clickedCard];
 
-    // Проверяем совпадение: есть ли пара
-    const unmatched = openCards.filter(
-      card => openCards.filter(c => c.suit === card.suit && c.rank === card.rank).length < 2,
-    );
+    if (updatedPair.length === 2) {
+      // Если открыта пара карт
+      const [firstCard, secondCard] = updatedPair;
 
-    if (!mistakeMode) {
-      // Обычный режим: если пара не совпала, игра заканчивается
-      if (unmatched.length >= 2) {
-        finishGame(STATUS_LOST);
-        return;
+      if (firstCard.suit === secondCard.suit && firstCard.rank === secondCard.rank) {
+        // Карты совпали
+        setCurrentPair([]); // Сбрасываем текущую пару
+        const isPlayerWon = nextCards.every(card => card.open); // Проверяем, выиграл ли игрок
+        if (isPlayerWon) finishGame(STATUS_WON);
+      } else {
+        // Карты не совпали
+        setTimeout(() => {
+          // Закрываем обе карты
+          const closedCards = nextCards.map(card =>
+            card.id === firstCard.id || card.id === secondCard.id ? { ...card, open: false } : card,
+          );
+          setCards(closedCards);
+          setCurrentPair([]); // Сбрасываем текущую пару
+
+          if (mistakeMode) {
+            // Если включен режим ошибок
+            addMistake();
+            if (mistakes + 1 >= 3) {
+              finishGame(STATUS_LOST);
+            }
+          } else {
+            // Если режим ошибок выключен, игра заканчивается сразу
+            finishGame(STATUS_LOST);
+          }
+        }, 1000); // Задержка для показа несоответствия
       }
     } else {
-      // Режим с ошибками: увеличиваем счётчик ошибок
-      if (unmatched.length >= 2) {
-        setMistakes(prev => {
-          const newMistakes = prev + 1;
-          if (newMistakes >= 3) finishGame(STATUS_LOST);
-          return newMistakes;
-        });
-      }
-    }
-
-    // Проверяем победу: все карты открыты
-    const isPlayerWon = nextCards.every(card => card.open);
-    if (isPlayerWon) {
-      finishGame(STATUS_WON);
+      // Сохраняем текущую пару, если открыта только одна карта
+      setCurrentPair(updatedPair);
     }
   };
 
@@ -109,7 +118,6 @@ export function Cards({ pairsCount = 3, previewSeconds = 5, mistakeMode = false 
     const deck = shuffle(generateDeck(pairsCount, 10));
     setCards(deck);
 
-    // Таймер обратного отсчёта
     const countdownInterval = setInterval(() => {
       setPreviewCountdown(prev => {
         if (prev <= 1) {
