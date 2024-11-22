@@ -5,171 +5,137 @@ import styles from "./Cards.module.css";
 import { EndGameModal } from "../../components/EndGameModal/EndGameModal";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
+import { useGameMode } from "../../contexts/GameModeContext";
 
 // Игра закончилась
 const STATUS_LOST = "STATUS_LOST";
 const STATUS_WON = "STATUS_WON";
 // Идет игра: карты закрыты, игрок может их открыть
 const STATUS_IN_PROGRESS = "STATUS_IN_PROGRESS";
-// Начало игры: игрок видит все карты в течении нескольких секунд
+// Начало игры: игрок видит все карты в течение нескольких секунд
 const STATUS_PREVIEW = "STATUS_PREVIEW";
 
 function getTimerValue(startDate, endDate) {
   if (!startDate && !endDate) {
-    return {
-      minutes: 0,
-      seconds: 0,
-    };
+    return { minutes: 0, seconds: 0 };
   }
 
-  if (endDate === null) {
-    endDate = new Date();
-  }
+  if (!endDate) endDate = new Date();
 
-  const diffInSecconds = Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
-  const minutes = Math.floor(diffInSecconds / 60);
-  const seconds = diffInSecconds % 60;
-  return {
-    minutes,
-    seconds,
-  };
+  const diffInSeconds = Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
+  const minutes = Math.floor(diffInSeconds / 60);
+  const seconds = diffInSeconds % 60;
+
+  return { minutes, seconds };
 }
 
-/**
- * Основной компонент игры, внутри него находится вся игровая механика и логика.
- * pairsCount - сколько пар будет в игре
- * previewSeconds - сколько секунд пользователь будет видеть все карты открытыми до начала игры
- */
 export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
-  // В cards лежит игровое поле - массив карт и их состояние открыта\закрыта
   const [cards, setCards] = useState([]);
-  // Текущий статус игры
   const [status, setStatus] = useState(STATUS_PREVIEW);
-
-  // Дата начала игры
+  const [previewCountdown, setPreviewCountdown] = useState(previewSeconds);
   const [gameStartDate, setGameStartDate] = useState(null);
-  // Дата конца игры
   const [gameEndDate, setGameEndDate] = useState(null);
-
-  // Стейт для таймера, высчитывается в setInteval на основе gameStartDate и gameEndDate
-  const [timer, setTimer] = useState({
-    seconds: 0,
-    minutes: 0,
-  });
+  const [timer, setTimer] = useState({ seconds: 0, minutes: 0 });
+  const [currentPair, setCurrentPair] = useState([]); // Хранит пару открытых карт
+  const { mistakeMode, mistakes, addMistake, resetMistakes } = useGameMode();
 
   function finishGame(status = STATUS_LOST) {
     setGameEndDate(new Date());
     setStatus(status);
   }
+
   function startGame() {
-    const startDate = new Date();
+    setGameStartDate(new Date());
     setGameEndDate(null);
-    setGameStartDate(startDate);
-    setTimer(getTimerValue(startDate, null));
     setStatus(STATUS_IN_PROGRESS);
   }
+
   function resetGame() {
+    setCards([]);
+    setStatus(STATUS_PREVIEW);
+    setPreviewCountdown(previewSeconds); // Сброс обратного отсчёта
     setGameStartDate(null);
     setGameEndDate(null);
-    setTimer(getTimerValue(null, null));
-    setStatus(STATUS_PREVIEW);
+    setTimer({ minutes: 0, seconds: 0 });
+    resetMistakes(); // Сброс ошибок через контекст
   }
 
-  /**
-   * Обработка основного действия в игре - открытие карты.
-   * После открытия карты игра может пепереходит в следующие состояния
-   * - "Игрок выиграл", если на поле открыты все карты
-   * - "Игрок проиграл", если на поле есть две открытые карты без пары
-   * - "Игра продолжается", если не случилось первых двух условий
-   */
   const openCard = clickedCard => {
-    // Если карта уже открыта, то ничего не делаем
-    if (clickedCard.open) {
-      return;
-    }
-    // Игровое поле после открытия кликнутой карты
-    const nextCards = cards.map(card => {
-      if (card.id !== clickedCard.id) {
-        return card;
-      }
+    // Если карта уже открыта или уже выбрана для проверки, ничего не делаем
+    if (clickedCard.open || currentPair.some(card => card.id === clickedCard.id)) return;
 
-      return {
-        ...card,
-        open: true,
-      };
-    });
-
+    // Открываем кликнутую карту
+    const nextCards = cards.map(card => (card.id === clickedCard.id ? { ...card, open: true } : card));
     setCards(nextCards);
 
-    const isPlayerWon = nextCards.every(card => card.open);
+    const updatedPair = [...currentPair, clickedCard];
 
-    // Победа - все карты на поле открыты
-    if (isPlayerWon) {
-      finishGame(STATUS_WON);
-      return;
-    }
+    if (updatedPair.length === 2) {
+      // Если открыта пара карт
+      const [firstCard, secondCard] = updatedPair;
 
-    // Открытые карты на игровом поле
-    const openCards = nextCards.filter(card => card.open);
+      if (firstCard.suit === secondCard.suit && firstCard.rank === secondCard.rank) {
+        // Карты совпали
+        setCurrentPair([]); // Сбрасываем текущую пару
+        const isPlayerWon = nextCards.every(card => card.open); // Проверяем, выиграл ли игрок
+        if (isPlayerWon) finishGame(STATUS_WON);
+      } else {
+        // Карты не совпали
+        setTimeout(() => {
+          // Закрываем обе карты
+          const closedCards = nextCards.map(card =>
+            card.id === firstCard.id || card.id === secondCard.id ? { ...card, open: false } : card,
+          );
+          setCards(closedCards);
+          setCurrentPair([]); // Сбрасываем текущую пару
 
-    // Ищем открытые карты, у которых нет пары среди других открытых
-    const openCardsWithoutPair = openCards.filter(card => {
-      const sameCards = openCards.filter(openCard => card.suit === openCard.suit && card.rank === openCard.rank);
-
-      if (sameCards.length < 2) {
-        return true;
+          if (mistakeMode) {
+            // Если включен режим ошибок
+            addMistake();
+            if (mistakes + 1 >= 3) {
+              finishGame(STATUS_LOST);
+            }
+          } else {
+            // Если режим ошибок выключен, игра заканчивается сразу
+            finishGame(STATUS_LOST);
+          }
+        }, 1000); // Задержка для показа несоответствия
       }
-
-      return false;
-    });
-
-    const playerLost = openCardsWithoutPair.length >= 2;
-
-    // "Игрок проиграл", т.к на поле есть две открытые карты без пары
-    if (playerLost) {
-      finishGame(STATUS_LOST);
-      return;
+    } else {
+      // Сохраняем текущую пару, если открыта только одна карта
+      setCurrentPair(updatedPair);
     }
-
-    // ... игра продолжается
   };
 
-  const isGameEnded = status === STATUS_LOST || status === STATUS_WON;
-
-  // Игровой цикл
   useEffect(() => {
-    // В статусах кроме превью доп логики не требуется
-    if (status !== STATUS_PREVIEW) {
-      return;
-    }
+    if (status !== STATUS_PREVIEW) return;
 
-    // В статусе превью мы
     if (pairsCount > 36) {
       alert("Столько пар сделать невозможно");
       return;
     }
 
-    setCards(() => {
-      return shuffle(generateDeck(pairsCount, 10));
-    });
+    const deck = shuffle(generateDeck(pairsCount, 10));
+    setCards(deck);
 
-    const timerId = setTimeout(() => {
-      startGame();
-    }, previewSeconds * 1000);
+    const countdownInterval = setInterval(() => {
+      setPreviewCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          startGame();
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-    return () => {
-      clearTimeout(timerId);
-    };
+    return () => clearInterval(countdownInterval);
   }, [status, pairsCount, previewSeconds]);
 
-  // Обновляем значение таймера в интервале
   useEffect(() => {
     const intervalId = setInterval(() => {
       setTimer(getTimerValue(gameStartDate, gameEndDate));
     }, 300);
-    return () => {
-      clearInterval(intervalId);
-    };
+    return () => clearInterval(intervalId);
   }, [gameStartDate, gameEndDate]);
 
   return (
@@ -179,23 +145,24 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
           {status === STATUS_PREVIEW ? (
             <div>
               <p className={styles.previewText}>Запоминайте пары!</p>
-              <p className={styles.previewDescription}>Игра начнется через {previewSeconds} секунд</p>
+              <p className={styles.previewDescription}>Игра начнется через {previewCountdown} секунд</p>
             </div>
           ) : (
             <>
               <div className={styles.timerValue}>
                 <div className={styles.timerDescription}>min</div>
-                <div>{timer.minutes.toString().padStart("2", "0")}</div>
+                <div>{timer.minutes.toString().padStart(2, "0")}</div>
               </div>
               .
               <div className={styles.timerValue}>
                 <div className={styles.timerDescription}>sec</div>
-                <div>{timer.seconds.toString().padStart("2", "0")}</div>
+                <div>{timer.seconds.toString().padStart(2, "0")}</div>
               </div>
             </>
           )}
         </div>
-        {status === STATUS_IN_PROGRESS ? <Button onClick={resetGame}>Начать заново</Button> : null}
+        {mistakeMode && <div className={styles.mistakes}>Осталось попыток: {3 - mistakes}</div>}
+        {status === STATUS_IN_PROGRESS && <Button onClick={resetGame}>Начать заново</Button>}
       </div>
 
       <div className={styles.cards}>
@@ -210,16 +177,27 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
         ))}
       </div>
 
-      {isGameEnded ? (
+      {status === STATUS_LOST && (
         <div className={styles.modalContainer}>
           <EndGameModal
-            isWon={status === STATUS_WON}
+            isWon={false}
             gameDurationSeconds={timer.seconds}
             gameDurationMinutes={timer.minutes}
             onClick={resetGame}
           />
         </div>
-      ) : null}
+      )}
+
+      {status === STATUS_WON && (
+        <div className={styles.modalContainer}>
+          <EndGameModal
+            isWon={true}
+            gameDurationSeconds={timer.seconds}
+            gameDurationMinutes={timer.minutes}
+            onClick={resetGame}
+          />
+        </div>
+      )}
     </div>
   );
 }
