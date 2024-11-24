@@ -1,21 +1,51 @@
-import { Link, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../Button/Button";
 import styles from "./LeaderboardModal.module.css";
 import celebrationImageUrl from "./images/celebration.png";
+import { useState } from "react";
+import { useLeadersContext } from "../../contexts/LeadersContext";
+import { addLeader } from "../../api";
 
-export function LeaderboardModal() {
+export function LeaderboardModal({ time }) {
+  const [userName, setUserName] = useState("");
+  const navigate = useNavigate();
+  const { setLeaders } = useLeadersContext();
+
+  const handleSubmit = () => {
+    const leaderData = {
+      name: userName.trim() || "Пользователь",
+      time: time || 0,
+    };
+
+    addLeader(leaderData)
+      .then(newLeader => {
+        setLeaders(prev => [...prev, newLeader]);
+        navigate("/leaderboard");
+      })
+      .catch(error => {
+        console.error("Ошибка при добавлении лидера:", error);
+      });
+  };
+
   const handlePlayButton = () => {
-    Navigate("/");
+    navigate("/");
   };
   return (
     <div className={styles.modal}>
       <img className={styles.image} src={celebrationImageUrl} alt="celebration emodji" />
       <h2 className={styles.title}>Вы попали на лидерборд!</h2>
-      <input className={styles.input} name="user" placeholder="Введите имя"></input>
-      <p className={styles.description}>Затраченное время:</p>
+      <input
+        className={styles.input}
+        value={userName}
+        onChange={e => setUserName(e.target.value)}
+        placeholder="Введите имя"
+      ></input>
+      <p className={styles.description}>Затраченное время: {time} секунд</p>
       <div className={styles.time}></div>
-      <Button>Отправить</Button>
-      <Button>onClick={handlePlayButton}Играть снова</Button>
+      <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+        <Button onClick={handleSubmit}>Отправить</Button>
+        <Button onClick={handlePlayButton}>Играть снова</Button>
+      </div>
       <div className={styles.leaderboard}>
         <Link className={styles.leaderboardLink} to="/leaderboard">
           Перейти к лидерборду
