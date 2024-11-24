@@ -6,6 +6,7 @@ import { EndGameModal } from "../../components/EndGameModal/EndGameModal";
 import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
 import { useGameMode } from "../../contexts/GameModeContext";
+import { LeaderboardModal } from "../LeaderboardModal/LeaderboardModal";
 
 // Игра закончилась
 const STATUS_LOST = "STATUS_LOST";
@@ -38,10 +39,17 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
   const [timer, setTimer] = useState({ seconds: 0, minutes: 0 });
   const [currentPair, setCurrentPair] = useState([]); // Хранит пару открытых карт
   const { mistakeMode, mistakes, addMistake, resetMistakes } = useGameMode();
+  const [currentModal, setCurrentModal] = useState(null); // Управление модальными окнами
 
   function finishGame(status = STATUS_LOST) {
     setGameEndDate(new Date());
     setStatus(status);
+
+    if (status === "STATUS_WON") {
+      setCurrentModal(pairsCount === 9 ? "leaderboard" : "victory");
+    } else {
+      setCurrentModal("defeat");
+    }
   }
 
   function startGame() {
@@ -58,62 +66,46 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
     setGameEndDate(null);
     setTimer({ minutes: 0, seconds: 0 });
     resetMistakes(); // Сброс ошибок через контекст
+    setCurrentModal(null); // Закрыть модальное окно
   }
 
   const openCard = clickedCard => {
-    // Если карта уже открыта или уже выбрана для проверки, ничего не делаем
     if (clickedCard.open || currentPair.some(card => card.id === clickedCard.id)) return;
 
-    // Открываем кликнутую карту
     const nextCards = cards.map(card => (card.id === clickedCard.id ? { ...card, open: true } : card));
     setCards(nextCards);
 
     const updatedPair = [...currentPair, clickedCard];
 
     if (updatedPair.length === 2) {
-      // Если открыта пара карт
       const [firstCard, secondCard] = updatedPair;
 
       if (firstCard.suit === secondCard.suit && firstCard.rank === secondCard.rank) {
-        // Карты совпали
-        setCurrentPair([]); // Сбрасываем текущую пару
-        const isPlayerWon = nextCards.every(card => card.open); // Проверяем, выиграл ли игрок
+        setCurrentPair([]);
+        const isPlayerWon = nextCards.every(card => card.open);
         if (isPlayerWon) finishGame(STATUS_WON);
       } else {
-        // Карты не совпали
         setTimeout(() => {
-          // Закрываем обе карты
           const closedCards = nextCards.map(card =>
             card.id === firstCard.id || card.id === secondCard.id ? { ...card, open: false } : card,
           );
           setCards(closedCards);
-          setCurrentPair([]); // Сбрасываем текущую пару
-
+          setCurrentPair([]);
           if (mistakeMode) {
-            // Если включен режим ошибок
             addMistake();
-            if (mistakes + 1 >= 3) {
-              finishGame(STATUS_LOST);
-            }
+            if (mistakes + 1 >= 3) finishGame(STATUS_LOST);
           } else {
-            // Если режим ошибок выключен, игра заканчивается сразу
             finishGame(STATUS_LOST);
           }
-        }, 1000); // Задержка для показа несоответствия
+        }, 1000);
       }
     } else {
-      // Сохраняем текущую пару, если открыта только одна карта
       setCurrentPair(updatedPair);
     }
   };
 
   useEffect(() => {
     if (status !== STATUS_PREVIEW) return;
-
-    if (pairsCount > 36) {
-      alert("Столько пар сделать невозможно");
-      return;
-    }
 
     const deck = shuffle(generateDeck(pairsCount, 10));
     setCards(deck);
@@ -177,26 +169,22 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
         ))}
       </div>
 
-      {status === STATUS_LOST && (
-        <div className={styles.modalContainer}>
-          <EndGameModal
-            isWon={false}
-            gameDurationSeconds={timer.seconds}
-            gameDurationMinutes={timer.minutes}
-            onClick={resetGame}
-          />
-        </div>
+      {currentModal === "leaderboard" && <LeaderboardModal time={timer.minutes * 60 + timer.seconds} />}
+      {currentModal === "victory" && (
+        <EndGameModal
+          isWon={true}
+          gameDurationSeconds={timer.seconds}
+          gameDurationMinutes={timer.minutes}
+          onClick={resetGame}
+        />
       )}
-
-      {status === STATUS_WON && (
-        <div className={styles.modalContainer}>
-          <EndGameModal
-            isWon={true}
-            gameDurationSeconds={timer.seconds}
-            gameDurationMinutes={timer.minutes}
-            onClick={resetGame}
-          />
-        </div>
+      {currentModal === "defeat" && (
+        <EndGameModal
+          isWon={false}
+          gameDurationSeconds={timer.seconds}
+          gameDurationMinutes={timer.minutes}
+          onClick={resetGame}
+        />
       )}
     </div>
   );
