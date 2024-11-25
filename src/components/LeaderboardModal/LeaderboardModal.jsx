@@ -3,13 +3,19 @@ import { Button } from "../Button/Button";
 import styles from "./LeaderboardModal.module.css";
 import celebrationImageUrl from "./images/celebration.png";
 import { useState } from "react";
-import { useLeadersContext } from "../../contexts/LeadersContext";
 import { addLeader } from "../../api";
 
 export function LeaderboardModal({ time }) {
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
-  const { setLeaders } = useLeadersContext();
+
+  const formatTime = timeInSeconds => {
+    const minutes = Math.floor(timeInSeconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const seconds = (timeInSeconds % 60).toString().padStart(2, "0");
+    return `${minutes}.${seconds}`;
+  };
 
   const handleSubmit = () => {
     const leaderData = {
@@ -18,8 +24,7 @@ export function LeaderboardModal({ time }) {
     };
 
     addLeader(leaderData)
-      .then(newLeader => {
-        setLeaders(prev => [...prev, newLeader]);
+      .then(() => {
         navigate("/leaderboard");
       })
       .catch(error => {
@@ -40,8 +45,8 @@ export function LeaderboardModal({ time }) {
         onChange={e => setUserName(e.target.value)}
         placeholder="Введите имя"
       ></input>
-      <p className={styles.description}>Затраченное время: {time} секунд</p>
-      <div className={styles.time}></div>
+      <p className={styles.description}>Затраченное время:</p>
+      <div className={styles.time}>{formatTime(time)}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
         <Button onClick={handleSubmit}>Отправить</Button>
         <Button onClick={handlePlayButton}>Играть снова</Button>

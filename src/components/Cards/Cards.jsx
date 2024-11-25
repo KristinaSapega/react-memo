@@ -46,7 +46,7 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
     setStatus(status);
 
     if (status === "STATUS_WON") {
-      setCurrentModal(pairsCount === 9 ? "leaderboard" : "victory");
+      setCurrentModal(pairsCount === 3 ? "leaderboard" : "victory");
     } else {
       setCurrentModal("defeat");
     }
