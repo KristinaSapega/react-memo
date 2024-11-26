@@ -9,7 +9,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-right: 40px;
 }
 
 .title {
@@ -97,3 +96,35 @@
     font-size: 24px;
     font-family: "Roboto", sans-serif;
 }
+
+.tooltipContainer {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .achievementImage {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+  }
+  
+  .tooltip {
+    display: none;
+    position: absolute;
+    bottom: 110%; /* Расположение над значком */
+    left: 50%;
+    padding: 8px;
+    border-radius: 8px;
+    text-align: center;
+    z-index: 1000;
+  }
+  
+  .tooltipImage {
+    width: 174px;
+    height: 87px;
+  }
+  
+  .tooltipContainer:hover .tooltip {
+    display: block;
+  }
+  
