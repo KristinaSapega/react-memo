@@ -3,6 +3,8 @@ import { Button } from "../../components/Button/Button";
 import styles from "./LeaderboardPage.module.css";
 import { useEffect, useState } from "react";
 import { getLeaders } from "../../api";
+import magicBallInactiveUrl from "./images/magic_ball_no_color.png";
+import puzzleInactiveUrl from "./images/puzzle_no_color.png";
 
 export function LeaderboardPage() {
   const [leaders, setLeaders] = useState([]);
@@ -49,12 +51,17 @@ export function LeaderboardPage() {
         <div className={styles.titleLine}>
           <div className={styles.position}>Позиция</div>
           <div className={styles.user}>Пользователь</div>
+          <div className={styles.achievement}>Достижение</div>
           <div className={styles.time}>Время</div>
         </div>
         {sortedLeaders.map((leader, index) => (
           <div key={`${leader.id || leader.name}-${index}`} className={styles.line}>
             <div className={styles.position}>{index + 1}</div>
             <div className={styles.user}>{leader.name}</div>
+            <div className={styles.achievement}>
+              <img className={styles.achievementImage} src={puzzleInactiveUrl} alt="puzzle_inactive" />
+              <img className={styles.achievementImage} src={magicBallInactiveUrl} alt="magic_ball_inactive" />
+            </div>
             <div className={styles.time}>{formatTime(leader.time)}</div>
           </div>
         ))}

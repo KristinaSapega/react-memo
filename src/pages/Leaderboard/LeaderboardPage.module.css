@@ -38,7 +38,9 @@
     border-radius: 12px;
     display: flex;
     align-items: center;
-    column-gap: 70px;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 60px;
     color: #999999;
 }
 
@@ -48,6 +50,7 @@
 
 .position,
 .user,
+.achievement,
 .time {
     height: 32px;
     align-content: center;
@@ -55,15 +58,32 @@
     font-weight: 400;
     line-height: 32px;
     font-family: "Poppins", sans-serif;
+    text-align: center;
 }
 
 .position {
-    width: 178px;
-    padding-left: 20px;
+    width: 106px;
+    
 }
 
 .user {
-    width: 484px;
+    width: 272px;
+    white-space: nowrap; /* Обрезаем текст, если он длинный */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Добавляем "..." для длинных имён */
+}
+
+.achievement {
+    width:194px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 5px;
+}
+
+.achievementImage {
+    width: 32px;
+    height: 32px;
 }
 
 .time {
