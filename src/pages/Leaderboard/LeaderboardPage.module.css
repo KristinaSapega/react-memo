@@ -68,9 +68,9 @@
 
 .user {
     width: 272px;
-    white-space: nowrap; /* Обрезаем текст, если он длинный */
+    white-space: nowrap; 
     overflow: hidden;
-    text-overflow: ellipsis; /* Добавляем "..." для длинных имён */
+    text-overflow: ellipsis; 
 }
 
 .achievement {
@@ -84,6 +84,7 @@
 .achievementImage {
     width: 32px;
     height: 32px;
+    display: inline-block;
 }
 
 .time {

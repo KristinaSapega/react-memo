@@ -5,14 +5,22 @@ import { useEffect, useState } from "react";
 import { getLeaders } from "../../api";
 import magicBallInactiveUrl from "./images/magic_ball_no_color.png";
 import puzzleInactiveUrl from "./images/puzzle_no_color.png";
+import magicBallUrl from "./images/magic_ball.png";
+import puzzleUrl from "./images/puzzle.png";
 
 export function LeaderboardPage() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const achievements = {
+    1: { id: 1, name: "Без суперсил", activeIcon: magicBallUrl, inactiveIcon: magicBallInactiveUrl },
+    2: { id: 2, name: "Сложный режим", activeIcon: puzzleUrl, inactiveIcon: puzzleInactiveUrl },
+  };
+
   useEffect(() => {
     getLeaders()
       .then(data => {
+        console.log("API", data);
         setLeaders(data.leaders);
         setLoading(false);
       })
@@ -54,17 +62,27 @@ export function LeaderboardPage() {
           <div className={styles.achievement}>Достижение</div>
           <div className={styles.time}>Время</div>
         </div>
-        {sortedLeaders.map((leader, index) => (
-          <div key={`${leader.id || leader.name}-${index}`} className={styles.line}>
-            <div className={styles.position}>{index + 1}</div>
-            <div className={styles.user}>{leader.name}</div>
-            <div className={styles.achievement}>
-              <img className={styles.achievementImage} src={puzzleInactiveUrl} alt="puzzle_inactive" />
-              <img className={styles.achievementImage} src={magicBallInactiveUrl} alt="magic_ball_inactive" />
+        {sortedLeaders.map((leader, index) => {
+          return (
+            <div key={`${leader.id || leader.name}-${index}`} className={styles.line}>
+              <div className={styles.position}>{index + 1}</div>
+              <div className={styles.user}>{leader.name}</div>
+              <div className={styles.achievement}>
+                {Object.values(achievements).map(achievement => (
+                  <img
+                    key={achievement.id}
+                    className={styles.achievementImage}
+                    src={
+                      leader.achievements?.includes(achievement.id) ? achievement.activeIcon : achievement.inactiveIcon
+                    }
+                    alt={achievement.name}
+                  />
+                ))}
+              </div>
+              <div className={styles.time}>{formatTime(leader.time)}</div>
             </div>
-            <div className={styles.time}>{formatTime(leader.time)}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
