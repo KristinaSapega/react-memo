@@ -5,7 +5,7 @@ import celebrationImageUrl from "./images/celebration.png";
 import { useState } from "react";
 import { addLeader } from "../../api";
 
-export function LeaderboardModal({ time }) {
+export function LeaderboardModal({ time, superPowerUsed, hardMode }) {
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
 
@@ -21,7 +21,14 @@ export function LeaderboardModal({ time }) {
     const leaderData = {
       name: userName.trim() || "Пользователь",
       time: time || 0,
+      achievements: [],
     };
+
+    // Добавляем достижения
+    if (!superPowerUsed) leaderData.achievements.push(1); // Без суперсил
+    if (hardMode) leaderData.achievements.push(2); // Сложный режим
+
+    console.log(leaderData);
 
     addLeader(leaderData)
       .then(() => {

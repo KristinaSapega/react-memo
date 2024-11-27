@@ -83,3 +83,33 @@
   font-weight: bold;
   margin-left: 5px;
 }
+
+.powerBox {
+  position: relative;
+  cursor: pointer;
+}
+
+.tooltipContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip {
+  display: none; 
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 1000;
+}
+
+.tooltipImage {
+  width: 222px;
+  height: 223px;
+}
+
+.tooltipContainer:hover .tooltip {
+  display: block; 
+}
+

@@ -7,6 +7,8 @@ import { Button } from "../../components/Button/Button";
 import { Card } from "../../components/Card/Card";
 import { useGameMode } from "../../contexts/GameModeContext";
 import { LeaderboardModal } from "../LeaderboardModal/LeaderboardModal";
+import insightUrl from "./images/eye.png";
+import insightTooltipUrl from "./images/eye_tooltip.png";
 
 // Игра закончилась
 const STATUS_LOST = "STATUS_LOST";
@@ -40,6 +42,31 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
   const [currentPair, setCurrentPair] = useState([]); // Хранит пару открытых карт
   const { mistakeMode, mistakes, addMistake, resetMistakes } = useGameMode();
   const [currentModal, setCurrentModal] = useState(null); // Управление модальными окнами
+  const [superPowerUsed, setSuperPowerUsed] = useState(false);
+
+  function activateSuperPower() {
+    if (superPowerUsed || status !== STATUS_IN_PROGRESS) return;
+
+    setSuperPowerUsed(true);
+    const pausedTime = new Date();
+    setGameEndDate(pausedTime);
+
+    // Открыть все карты
+    const allOpenCards = cards.map(card => ({ ...card, open: true }));
+    setCards(allOpenCards);
+
+    // Возвращаем скрытие ненайденных карт
+    setTimeout(() => {
+      const resetCards = allOpenCards.map(
+        card => (card.matched ? card : { ...card, open: false }), // Закрываем только ненайденные карты
+      );
+      setCards(resetCards);
+
+      const timePaused = new Date().getTime() - pausedTime.getTime();
+      setGameStartDate(prev => new Date(prev.getTime() + timePaused)); // Продолжаем таймер с учётом паузы
+      setGameEndDate(null); // Снимаем остановку таймера
+    }, 5000);
+  }
 
   function finishGame(status = STATUS_LOST) {
     setGameEndDate(new Date());
@@ -65,8 +92,9 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
     setGameStartDate(null);
     setGameEndDate(null);
     setTimer({ minutes: 0, seconds: 0 });
-    resetMistakes(); // Сброс ошибок через контекст
+    resetMistakes(); // Сброс ошибок
     setCurrentModal(null); // Закрыть модальное окно
+    setSuperPowerUsed(false); // Сбрасываем суперсилу
   }
 
   const openCard = clickedCard => {
@@ -81,8 +109,13 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
       const [firstCard, secondCard] = updatedPair;
 
       if (firstCard.suit === secondCard.suit && firstCard.rank === secondCard.rank) {
+        // Помечаем пары как найденные
+        const matchedCards = nextCards.map(card =>
+          card.id === firstCard.id || card.id === secondCard.id ? { ...card, matched: true } : card,
+        );
+        setCards(matchedCards);
         setCurrentPair([]);
-        const isPlayerWon = nextCards.every(card => card.open);
+        const isPlayerWon = matchedCards.every(card => card.matched);
         if (isPlayerWon) finishGame(STATUS_WON);
       } else {
         setTimeout(() => {
@@ -154,6 +187,16 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
           )}
         </div>
         {mistakeMode && <div className={styles.mistakes}>Осталось попыток: {3 - mistakes}</div>}
+        {status === STATUS_IN_PROGRESS && !superPowerUsed ? (
+          <div className={styles.powerBox} onClick={activateSuperPower}>
+            <div className={styles.tooltipContainer}>
+              <img className={styles.power} src={insightUrl} alt="insight-power" />
+              <div className={styles.tooltip}>
+                <img className={styles.tooltipImage} src={insightTooltipUrl} alt="tooltip" />
+              </div>
+            </div>
+          </div>
+        ) : null}
         {status === STATUS_IN_PROGRESS && <Button onClick={resetGame}>Начать заново</Button>}
       </div>
 
@@ -169,7 +212,13 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
         ))}
       </div>
 
-      {currentModal === "leaderboard" && <LeaderboardModal time={timer.minutes * 60 + timer.seconds} />}
+      {currentModal === "leaderboard" && (
+        <LeaderboardModal
+          time={timer.minutes * 60 + timer.seconds}
+          superPowerUsed={superPowerUsed}
+          hardMode={pairsCount === 9}
+        />
+      )}
       {currentModal === "victory" && (
         <EndGameModal
           isWon={true}

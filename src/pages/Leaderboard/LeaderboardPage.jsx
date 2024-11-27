@@ -3,14 +3,38 @@ import { Button } from "../../components/Button/Button";
 import styles from "./LeaderboardPage.module.css";
 import { useEffect, useState } from "react";
 import { getLeaders } from "../../api";
+import magicBallInactiveUrl from "./images/magic_ball_no_color.png";
+import puzzleInactiveUrl from "./images/puzzle_no_color.png";
+import magicBallUrl from "./images/magic_ball.png";
+import puzzleUrl from "./images/puzzle.png";
+import hardModeUrl from "./images/hardMode.png";
+import superPowerUsedUrl from "./images/superPowerUsed.png";
 
 export function LeaderboardPage() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const achievements = {
+    1: {
+      id: 1,
+      name: "Без суперсил",
+      activeIcon: magicBallUrl,
+      inactiveIcon: magicBallInactiveUrl,
+      tooltip: superPowerUsedUrl,
+    },
+    2: {
+      id: 2,
+      name: "Сложный режим",
+      activeIcon: puzzleUrl,
+      inactiveIcon: puzzleInactiveUrl,
+      tooltip: hardModeUrl,
+    },
+  };
+
   useEffect(() => {
     getLeaders()
       .then(data => {
+        console.log("API", data);
         setLeaders(data.leaders);
         setLoading(false);
       })
@@ -49,15 +73,42 @@ export function LeaderboardPage() {
         <div className={styles.titleLine}>
           <div className={styles.position}>Позиция</div>
           <div className={styles.user}>Пользователь</div>
+          <div className={styles.achievement}>Достижение</div>
           <div className={styles.time}>Время</div>
         </div>
-        {sortedLeaders.map((leader, index) => (
-          <div key={`${leader.id || leader.name}-${index}`} className={styles.line}>
-            <div className={styles.position}>{index + 1}</div>
-            <div className={styles.user}>{leader.name}</div>
-            <div className={styles.time}>{formatTime(leader.time)}</div>
-          </div>
-        ))}
+        {sortedLeaders.map((leader, index) => {
+          return (
+            <div key={`${leader.id || leader.name}-${index}`} className={styles.line}>
+              <div className={styles.position}>{index + 1}</div>
+              <div className={styles.user}>{leader.name}</div>
+              <div className={styles.achievement}>
+                {Object.values(achievements).map(achievement => (
+                  <div className={styles.tooltipContainer} key={achievement.id}>
+                    <img
+                      className={styles.achievementImage}
+                      src={
+                        leader.achievements?.includes(achievement.id)
+                          ? achievement.activeIcon
+                          : achievement.inactiveIcon
+                      }
+                      alt={achievement.name}
+                    />
+                    {leader.achievements?.includes(achievement.id) && (
+                      <div className={styles.tooltip}>
+                        <img
+                          src={achievement.tooltip}
+                          alt={`Подсказка ${achievement.name}`}
+                          className={styles.tooltipImage}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className={styles.time}>{formatTime(leader.time)}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
