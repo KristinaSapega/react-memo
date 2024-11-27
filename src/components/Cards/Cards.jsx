@@ -8,6 +8,7 @@ import { Card } from "../../components/Card/Card";
 import { useGameMode } from "../../contexts/GameModeContext";
 import { LeaderboardModal } from "../LeaderboardModal/LeaderboardModal";
 import insightUrl from "./images/eye.png";
+import insightTooltipUrl from "./images/eye_tooltip.png";
 
 // Игра закончилась
 const STATUS_LOST = "STATUS_LOST";
@@ -188,7 +189,12 @@ export function Cards({ pairsCount = 3, previewSeconds = 5 }) {
         {mistakeMode && <div className={styles.mistakes}>Осталось попыток: {3 - mistakes}</div>}
         {status === STATUS_IN_PROGRESS && !superPowerUsed ? (
           <div className={styles.powerBox} onClick={activateSuperPower}>
-            <img className={styles.power} src={insightUrl} alt="insight-power" />
+            <div className={styles.tooltipContainer}>
+              <img className={styles.power} src={insightUrl} alt="insight-power" />
+              <div className={styles.tooltip}>
+                <img className={styles.tooltipImage} src={insightTooltipUrl} alt="tooltip" />
+              </div>
+            </div>
           </div>
         ) : null}
         {status === STATUS_IN_PROGRESS && <Button onClick={resetGame}>Начать заново</Button>}
