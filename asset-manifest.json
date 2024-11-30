@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/react-memo/static/css/main.a6605f11.css",
+    "main.js": "/react-memo/static/js/main.36658c5c.js",
+    "static/media/StratosSkyeng.woff2": "/react-memo/static/media/StratosSkyeng.ce93393e831d32412096.woff2",
+    "static/media/celebration.png": "/react-memo/static/media/celebration.2577e3c3835ac1f32429.png",
+    "static/media/dead.png": "/react-memo/static/media/dead.bfb3f81b5110f1b62252.png",
+    "static/media/eye_tooltip.png": "/react-memo/static/media/eye_tooltip.d5f6dd1046edd24b0f7b.png",
+    "static/media/сard-shirt.svg": "/react-memo/static/media/сard-shirt.4d53d3f942979a0dcb35c53a2889e78b.svg",
+    "static/media/cross.svg": "/react-memo/static/media/cross.7f91ce47ecbf6ae38498fefd7b1000b6.svg",
+    "index.html": "/react-memo/index.html",
+    "static/media/hearts.svg": "/react-memo/static/media/hearts.be33f4a44d6f0430c5e08883a0ad5e5b.svg",
+    "static/media/spades.svg": "/react-memo/static/media/spades.93f2e7c8261b046c228b40965b4493ec.svg",
+    "static/media/diamonds.svg": "/react-memo/static/media/diamonds.6d6202122f9a41366f7da20cfe4cf5b7.svg",
+    "main.a6605f11.css.map": "/react-memo/static/css/main.a6605f11.css.map",
+    "main.36658c5c.js.map": "/react-memo/static/js/main.36658c5c.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a6605f11.css",
+    "static/js/main.36658c5c.js"
+  ]
+}
